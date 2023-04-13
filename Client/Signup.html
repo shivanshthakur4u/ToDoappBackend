@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>To Do App</title>
+</head>
+
+<body>
+    <h1 style="text-align: center;">To Do App</h1>
+    <h2 style="text-align: center;">SignUp</h2>
+    <form style="text-align: center;" id="signup-form">
+        <label>
+           Name:
+            <input type="text" name="name" required />
+          </label>
+        <br/>
+        <br/>
+        <label>
+        Email:
+        <input type="email" name="email" required />
+      </label>
+        <br/>
+        <br/>
+        <label>
+        Password:
+        <input type="password" name="password" required />
+      </label>
+        <br/>
+        <br/>
+        <p>Already have an accoun ? <a href="./Login.html">Signin</a></p>
+
+        <button type="submit">Signup</button>
+    </form>
+
+    <!-- <script src="index.js"></script> -->
+    <script>
+        const baseUrl = "https://todoappbackend-j2rq.onrender.com";
+        const signupForm = document.getElementById("signup-form");
+        signupForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+
+            const formData = new FormData(signupForm);
+            const name = formData.get("name");
+            const email = formData.get("email");
+            const password = formData.get("password");
+
+            fetch(`${baseUrl}/signup`, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        name,
+                        email,
+                        password
+                    }),
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.message === "User registered successfully") {
+                        alert("User registered successfully")
+                        window.location.href = "./Login.html"
+                        const token = data.Token;
+                    } else if (data.error === "User already exists") {
+                        alert("User already exists")
+                    } else {
+                        alert("Something went wrong")
+                    }
+
+                })
+                .catch((error) => console.error(error));
+        });
+    </script>
+</body>
+
+</html>

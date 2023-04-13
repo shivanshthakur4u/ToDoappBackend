@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>To Do App</title>
+</head>
+
+<body style="background-color: #f0f0f0; font-family: Arial, sans-serif;">
+    <h1 style="text-align: center;">To Do App</h1>
+
+    <h2 style="text-align: center;">Add Task</h2>
+    <form style="text-align: center;" id="add-task-form">
+        <label>
+        Name:
+        <input type="text" name="name" style="margin-left: 10px;" required  />
+    </label>
+        <br/>
+        <br />
+        <label style="margin: 10px;">
+        Priority:
+        <input type="number" name="priority" min="1" max="9" style="margin-left: 10px;" required />
+    </label>
+        <br/>
+        <br />
+        <button type="submit" style="background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Add Task</button>
+    </form>
+
+    <h2 style="text-align: center;">Task List</h2>
+    <ul id="task-list" style="list-style-type: none; padding-left: 0; text-align: center;; "></ul>
+
+    <h2 style="text-align: center;">Report of Tasks</h2>
+    <div style="text-align: center; font-weight: bold;" id="report"></div>
+    <h2 style="text-align: center;">List of Tast With status</h2>
+    <p style="text-align: center;" id="task-counts"></p>
+    <table style="margin: 0 auto;">
+        <thead>
+            <tr>
+                <th style="padding: 10px;">Name</th>
+                <th style="padding: 10px;">Status</th>
+            </tr>
+        </thead>
+        <tbody id="taskTableBody"></tbody>
+    </table>
+
+
+
+    <script>
+        const baseUrl = "https://todoappbackend-j2rq.onrender.com";
+        let token = localStorage.getItem("token");
+        if (!token) {
+            window.location.href = "./Login.html"
+        }
+        console.log("token", token)
+
+        const taskList = document.getElementById("task-list");
+        const report = document.getElementById("report");
+
+        const getTasks = () => {
+            fetch(`${baseUrl}/api/task`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                })
+                .then((response) => response.json())
+                .then((data) => {
+
+                    taskList.innerHTML = "";
+                    data.forEach((task, index) => {
+                        const li = document.createElement("li");
+                        li.innerHTML = `${index + 1}. ${task.name} (${task.priority}) [${task.status === 'Completed' ? '&#10003;' : task.status === 'Canceled' ? '&#10005;' : ''}] 
+        <button onclick="completeTask('${task._id}')">Mark as completed</button>
+        <button onclick="cancelTask('${task._id}')">Mark as canceled</button>
+        <button onclick="deleteTask('${task._id}')">Delete task</button>`;
+                        taskList.appendChild(li);
+                    });
+                    generateReport(data);
+                })
+                .catch((error) => console.error(error));
+        };
+
+
+
+
+
+        const generateReport = (tasks) => {
+            let pendingCount = 0;
+            let canceledCount = 0;
+            let deletedCount = 0;
+            let completedCount = 0;
+
+            const pendingTasks = [];
+            const canceledTasks = [];
+            const deletedTasks = [];
+            const completedTasks = [];
+
+            tasks.forEach((task) => {
+                if (task.status === "Pending") {
+                    pendingCount++;
+                    pendingTasks.push(task);
+                } else if (task.status === "Canceled") {
+                    canceledCount++;
+                    canceledTasks.push(task);
+                } else if (task.status === "Deleted") {
+                    deletedCount++;
+                    deletedTasks.push(task);
+                } else if (task.status === "Completed") {
+                    completedCount++;
+                    completedTasks.push(task);
+                }
+            });
+
+            const sortedTasks = [
+                ...pendingTasks,
+                ...canceledTasks,
+                ...completedTasks
+
+            ].sort((a, b) => a.priority - b.priority);
+
+            report.innerHTML = `Pending Tasks: ${pendingCount}<br />
+                     Canceled Tasks: ${canceledCount}<br />
+                     Deleted Tasks: ${deletedTasks.length}<br />
+                     Completed Tasks: ${completedCount}`;
+
+            taskList.innerHTML = "";
+            sortedTasks.forEach((task, index) => {
+                const li = document.createElement("li");
+                li.innerHTML = `${index + 1}. ${task.name} (${task.priority}) [${task.status === 'Completed' ? '&#10003;' : task.status === 'Canceled' ? '✕' : ''}]
+      <button onclick="completeTask('${task._id}')">Mark as completed</button>
+      <button onclick="cancelTask('${task._id}')">Mark as canceled</button>
+      <button onclick="deleteTask('${task._id}')">Delete task</button>`;
+                taskList.appendChild(li);
+            });
+
+            const taskTableBody = document.getElementById("taskTableBody");
+            taskTableBody.innerHTML = "";
+
+            sortedTasks.forEach((task) => {
+                const tr = document.createElement("tr");
+                const nameTd = document.createElement("td");
+                nameTd.textContent = task.name;
+                const statusTd = document.createElement("td");
+                statusTd.textContent = task.status;
+                tr.appendChild(nameTd);
+                tr.appendChild(statusTd);
+                taskTableBody.appendChild(tr);
+            });
+        };
+
+
+
+        const addTask = (event) => {
+            event.preventDefault();
+            const name = document.getElementsByName("name")[0].value;
+            const priority = document.getElementsByName("priority")[0].value;
+
+            fetch(`${baseUrl}/api/task`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        name,
+                        priority
+                    }),
+                })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.message === "Task Added successfully") {
+                        alert(data.message)
+                        getTasks();
+
+                        document.getElementById("add-task-form").reset();
+                    } else {
+                        alert("Something Went wrong")
+                        document.getElementById("add-task-form").reset();
+                    }
+
+                })
+                .catch((error) => console.error(error));
+        };
+
+        const completeTask = (taskId) => {
+            fetch(`${baseUrl}/api/task/${taskId}/completed`, {
+                    method: "PATCH",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                })
+                .then((response) => response.json())
+                .then((data) => {
+                    // console.log("completed:", data[1].status)
+                    generateReport(data);
+                    getTasks();
+                    // Call generateReport() function here
+                    console.log("Task marked as completed.");
+
+                })
+                .catch((error) => console.error(error));
+        };
+
+
+        const cancelTask = (taskId) => {
+            fetch(`${baseUrl}/api/task/${taskId}/cancel`, {
+                    method: "PATCH",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                })
+                .then((response) => response.json())
+                .then((data) => {
+                    // console.log("cancel:", data[1].status)
+                    generateReport(data);
+                    getTasks();
+                    // Call generateReport() function here
+                    console.log("Task marked as canceled.");
+
+                })
+                .catch((error) => console.error(error));
+        };
+
+
+
+
+        const deleteTask = (taskId) => {
+            fetch(`${baseUrl}/api/task/${taskId}/delete`, {
+                    method: "DELETE",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                })
+                .then((response) => {
+                    if (response.ok) {
+                        console.log("Task deleted successfully.");
+                        return response.json();
+                    } else {
+                        throw new Error("Failed to delete task.");
+                    }
+                })
+                .then((data) => {
+                    console.log("Data:", data)
+                    generateReport(data)
+                    getTasks(); // call getTasks function after the task is deleted
+                })
+                .catch((error) => console.error(error));
+        };
+
+        document.getElementById("add-task-form").addEventListener("submit", addTask);
+
+        getTasks();
+    </script>
+</body>
+
+</html>
