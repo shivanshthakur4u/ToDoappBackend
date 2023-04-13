@@ -1,3 +1,29 @@
+
+
+## Auth Routes 👇
+
+### `POST  /signup`
+
+#### Description
+This endpoint is used to register new users 
+
+### Response
+-Status Code : 200 ok if User registered successfully, 400 Inavlid Credentials if User is already Registered or not given all required values, 500 Something went wrong if there is any problem while registering user.
+-Body: JWT token with user registered sucessfully message
+
+
+### `POST  /signin`
+
+#### Description
+This endpoint is used to signin users 
+
+### Response
+-Status Code : 200 ok if User Signin successfully, 422 Inavlid Credentials if User provide invalid details, 400 All fields are required if doesn't provide any required details, 500 Something went wrong if there is any problem in server .
+-Body: JWT token with user  signin sucessfully message
+
+
+
+
 ## API Endpoints:
 
 ### `GET /api/task`
